@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Chrome Dino Game</title>
+    <style>
+        body {
+            text-align: center;
+            background-color: white;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            border: 2px solid black;
+            display: block;
+            width: 100vw;
+            height: 50vh;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const dinoImg = new Image();
+        dinoImg.src = "./assets/images/gogoli.png";
+        
+        const obstacleImg = new Image();
+        obstacleImg.src = "./assets/images/matin.png";
+        
+        const loseImage = new Image(); // برای تصویر جدید
+        loseImage.src = "./assets/images/kohandly.png"; // مسیر تصویر جدید
+
+        let dino = { x: 50, y: canvas.height - 150, width: 100, height: 100, velocityY: 0, gravity: 0.6, jumpPower: -15 };
+        let ground = { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 };
+        let obstacles = [];
+        let gameOver = false;
+        let score = 0;
+        
+        function jump() {
+            if (!gameOver && dino.y >= canvas.height - 150) {
+                dino.velocityY = dino.jumpPower;
+            }
+            if (gameOver) {
+                resetGame();
+            }
+        }
+        
+        document.addEventListener("keydown", function(event) {
+            if (event.code === "Space") {
+                jump();
+            }
+        });
+        document.addEventListener("click", function() {
+            jump();
+        });
+        
+        function checkCollision(dino, obstacle) {
+            return (
+                dino.x < obstacle.x + obstacle.width &&
+                dino.x + dino.width > obstacle.x &&
+                dino.y < obstacle.y + obstacle.height &&
+                dino.y + dino.height > obstacle.y
+            );
+        }
+        
+        function update() {
+            if (gameOver) return;
+            
+            dino.velocityY += dino.gravity;
+            dino.y += dino.velocityY;
+            if (dino.y >= canvas.height - 150) dino.y = canvas.height - 150;
+            
+            if (obstacles.length === 0 || canvas.width - obstacles[obstacles.length - 1].x > Math.random() * 300 + 150) {
+                obstacles.push({ x: canvas.width, y: canvas.height - 120, width: 80, height: 80 });
+            }
+            
+            for (let i = 0; i < obstacles.length; i++) {
+                obstacles[i].x -= 5;
+                if (checkCollision(dino, obstacles[i])) {
+                    gameOver = true;
+                }
+            }
+            obstacles = obstacles.filter(obstacle => obstacle.x > -80);
+            score++;
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "black";
+            ctx.fillRect(ground.x, ground.y, ground.width, ground.height);
+            
+            for (let obstacle of obstacles) {
+                ctx.drawImage(obstacleImg, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            }
+            
+            ctx.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
+            ctx.fillStyle = "black";
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 10, 30);
+            
+            if (gameOver) {
+                ctx.fillText("باختی کیومرث متین کوشتت", canvas.width / 2 - 150, canvas.height / 2);
+                
+                // قرار دادن تصویر کنار متن با ابعاد مناسب
+                const imageWidth = 100; // عرض تصویر
+                const imageHeight = 100; // ارتفاع تصویر
+                const textWidth = ctx.measureText("باختی کیومرث متین کوشتت").width;
+                const imageX = canvas.width / 2 + textWidth / 2 + 10; // محل قرارگیری تصویر
+                const imageY = canvas.height / 2 - imageHeight / 2; // محل قرارگیری تصویر
+
+                ctx.drawImage(loseImage, imageX, imageY, imageWidth, imageHeight);
+            }
+        }
+        
+        function resetGame() {
+            gameOver = false;
+            obstacles = [];
+            score = 0;
+            dino.y = canvas.height - 150;
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        gameLoop();
+    </script>
+</body>
+</html>
